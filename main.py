@@ -179,7 +179,7 @@ def run_game(username):
                 fire_bullet(bulletX, bulletY)
                 bulletY -= bulletY_change
 
-            # Power-up
+            # Power-up by nikita
             if powerup_active:
                 powerupY += powerup_speed
                 pygame.draw.rect(screen, (0, 255, 255), (powerupX, powerupY, 30, 30))
