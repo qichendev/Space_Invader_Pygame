@@ -7,7 +7,7 @@ pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Login - Space Invader")
-
+# login screen
 def login_screen():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("comicsansms", 50, bold=True)
