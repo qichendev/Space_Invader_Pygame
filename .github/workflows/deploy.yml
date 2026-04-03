@@ -50,6 +50,13 @@ jobs:
           sed -i 's/while embed.counter()<0:/if False:  # patched: skip WASM module wait/' build/web/index.html
           # Bypass the MM.UME media-engagement wait loop in site.py
           sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
+          # Download browserfs.min.js locally to avoid ORB (Opaque Response Blocking)
+          # The CDN at pygame-web.github.io lacks CORS headers, causing browsers to block
+          # the script load and leaving the game stuck on the loading screen.
+          curl -sL "https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js" \
+               -o build/web/browserfs.min.js
+          sed -i 's|https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js|browserfs.min.js|g' \
+               build/web/index.html
           # Copy Azure config for WASM headers and MIME types
           cp staticwebapp.config.json build/web/staticwebapp.config.json
           echo "Build artifacts:"
