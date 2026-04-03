@@ -1,5 +1,7 @@
 # Space Invaders
 
+**Play now:** https://lively-smoke-01b8a7b1e.6.azurestaticapps.net
+
 A classic Space Invaders game built with Python and Pygame, deployable as a web app via Pygbag.
 
 **Course:** CSD-4503 - DevOps Tools and Practices
