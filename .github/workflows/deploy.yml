@@ -64,55 +64,8 @@ jobs:
           # static "Loading, please wait..." message.  The script wraps window.fetch,
           # intercepts the .tar.gz request, reads the response as a stream, and
           # updates the existing #progress and #status elements in real time.
-          python3 - <<'PYEOF'
-import re
-
-SCRIPT = r"""<script>
-(function () {
-  var _fetch = window.fetch;
-  window.fetch = function (url, opts) {
-    if (typeof url === 'string' && url.indexOf('.tar.gz') !== -1) {
-      return _fetch(url, opts).then(function (resp) {
-        var total = parseInt(resp.headers.get('Content-Length') || '0', 10);
-        var loaded = 0;
-        var statusEl  = document.getElementById('status');
-        var progressEl = document.getElementById('progress');
-        if (statusEl)  statusEl.innerText  = 'Downloading game assets... 0%';
-        if (progressEl) { progressEl.max = 100; progressEl.value = 0; }
-        var reader = resp.body.getReader();
-        var chunks = [];
-        function pump() {
-          return reader.read().then(function (r) {
-            if (r.done) {
-              if (statusEl)  statusEl.innerText  = 'Extracting...';
-              if (progressEl) progressEl.value = 100;
-              var blob = new Blob(chunks);
-              return new Response(blob, { status: resp.status, headers: resp.headers });
-            }
-            chunks.push(r.value);
-            loaded += r.value.length;
-            if (total) {
-              var pct = Math.min(99, Math.round(loaded / total * 100));
-              if (statusEl)  statusEl.innerText  = 'Downloading game assets... ' + pct + '%';
-              if (progressEl) progressEl.value = pct;
-            }
-            return pump();
-          });
-        }
-        return pump();
-      });
-    }
-    return _fetch(url, opts);
-  };
-})();
-</script>
-"""
-
-html = open('build/web/index.html').read()
-html = html.replace('</head>', SCRIPT + '</head>', 1)
-open('build/web/index.html', 'w').write(html)
-print("Progress bar script injected.")
-PYEOF
+          sed -i 's|</head>|<script>(function(){var _f=window.fetch;window.fetch=function(url,opts){if(typeof url==="string"\&\&url.indexOf(".tar.gz")!==-1){return _f(url,opts).then(function(resp){var total=parseInt(resp.headers.get("Content-Length")||"0",10);var loaded=0;var sEl=document.getElementById("status");var pEl=document.getElementById("progress");if(sEl)sEl.innerText="Downloading... 0%";if(pEl){pEl.max=100;pEl.value=0;}var reader=resp.body.getReader();var chunks=[];function pump(){return reader.read().then(function(r){if(r.done){if(sEl)sEl.innerText="Extracting...";if(pEl)pEl.value=100;return new Response(new Blob(chunks),{status:resp.status,headers:resp.headers});}chunks.push(r.value);loaded+=r.value.length;if(total){var pct=Math.min(99,Math.round(loaded/total*100));if(sEl)sEl.innerText="Downloading... "+pct+"%";if(pEl)pEl.value=pct;}return pump();});}return pump();});}return _f(url,opts);};})();</script></head>|' build/web/index.html
+          echo "Progress bar script injected."
           # Download BrowserFS from unpkg (pygame-web CDN returns 404 for this file).
           # Self-hosting also avoids ORB blocking on cross-origin opaque responses.
           curl -sL "https://unpkg.com/browserfs@2.0.0/dist/browserfs.min.js" \
