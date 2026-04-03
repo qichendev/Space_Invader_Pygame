@@ -40,6 +40,8 @@ jobs:
             echo "ERROR: build/web/index.html was not generated"
             exit 1
           fi
+          # Auto-start the game without requiring a click on the run button
+          sed -i 's/autorun : 0/autorun : 1/g' build/web/index.html
           echo "Build artifacts:"
           ls -lh build/web/
 
