@@ -33,11 +33,16 @@ async def run_game(screen, username):
     pygame.display.set_icon(icon)
 
     background = pygame.image.load("background.png")
-    mixer.music.load("background.ogg")
-    mixer.music.play(-1)
 
-    laser_sound = mixer.Sound("laser.ogg")
-    explosion_sound = mixer.Sound("explosion.ogg")
+    # Load audio — deferred play until first user interaction (browser autoplay policy)
+    try:
+        mixer.music.load("background.ogg")
+        laser_sound = mixer.Sound("laser.ogg")
+        explosion_sound = mixer.Sound("explosion.ogg")
+    except Exception:
+        laser_sound = None
+        explosion_sound = None
+    music_started = False
 
     font = pygame.font.Font("freesansbold.ttf", 32)
     over_font = pygame.font.Font("freesansbold.ttf", 64)
@@ -107,6 +112,14 @@ async def run_game(screen, username):
                 running = False
 
             if event.type == pygame.KEYDOWN:
+                # Start background music on first keypress (browser autoplay policy)
+                if not music_started:
+                    try:
+                        mixer.music.play(-1)
+                    except Exception:
+                        pass
+                    music_started = True
+
                 if event.key == pygame.K_p:
                     state["paused"] = not state["paused"]
                 if event.key == pygame.K_r and state["game_over"]:
@@ -119,7 +132,11 @@ async def run_game(screen, username):
                     if event.key == pygame.K_SPACE and state["bullet_state"] == "ready":
                         state["bulletX"] = state["playerX"]
                         state["bullet_state"] = "fire"
-                        laser_sound.play()
+                        if laser_sound:
+                            try:
+                                laser_sound.play()
+                            except Exception:
+                                pass
 
             if event.type == pygame.KEYUP:
                 if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
@@ -152,7 +169,11 @@ async def run_game(screen, username):
                             state["bulletX"], state["bulletY"],
                         )
                     if hit:
-                        explosion_sound.play()
+                        if explosion_sound:
+                            try:
+                                explosion_sound.play()
+                            except Exception:
+                                pass
                         state["score"] += 1
                         state["enemyX"][i] = random.randint(0, PLAYER_BOUNDARY)
                         state["enemyY"][i] = random.randint(50, 150)
