@@ -227,10 +227,20 @@ async def run_game(screen, username):
 
 
 async def main():
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    username = await login_screen(screen)
-    await run_game(screen, username)
+    print("DEBUG: main() started")
+    try:
+        pygame.init()
+        print("DEBUG: pygame.init() done")
+        screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        print("DEBUG: display set")
+        username = await login_screen(screen)
+        print(f"DEBUG: login done, user={username}")
+        await run_game(screen, username)
+    except Exception as e:
+        import traceback
+        print(f"DEBUG ERROR: {e}")
+        traceback.print_exc()
 
 
+print("DEBUG: module loaded, calling asyncio.run")
 asyncio.run(main())
