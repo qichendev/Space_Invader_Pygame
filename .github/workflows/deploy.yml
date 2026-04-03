@@ -42,8 +42,11 @@ jobs:
           fi
           # Auto-start the game without requiring a click on the run button
           sed -i 's/autorun : 0/autorun : 1/g' build/web/index.html
+          # Remove "snd" from data-os so Pygbag does not wait for audio WASM
+          # (audio requires a user gesture to load; without this, embed.counter()
+          #  stays negative forever and Python never starts)
+          sed -i 's/data-os="vtx,snd,gui"/data-os="vtx,gui"/' build/web/index.html
           # Bypass the MM.UME media-engagement wait loop in site.py
-          # (audio is already deferred to first keypress in main.py)
           sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
           # Copy Azure config for WASM headers and MIME types
           cp staticwebapp.config.json build/web/staticwebapp.config.json
