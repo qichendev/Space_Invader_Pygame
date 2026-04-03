@@ -50,10 +50,9 @@ jobs:
           sed -i 's/while embed.counter()<0:/if False:  # patched: skip WASM module wait/' build/web/index.html
           # Bypass the MM.UME media-engagement wait loop in site.py
           sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
-          # Download browserfs.min.js locally to avoid ORB (Opaque Response Blocking)
-          # The CDN at pygame-web.github.io lacks CORS headers, causing browsers to block
-          # the script load and leaving the game stuck on the loading screen.
-          curl -sL "https://pygame-web.github.io/cdn/0.9.3/browserfs.min.js" \
+          # Download BrowserFS from unpkg (pygame-web CDN returns 404 for this file).
+          # Self-hosting also avoids ORB blocking on cross-origin opaque responses.
+          curl -sL "https://unpkg.com/browserfs@2.0.0/dist/browserfs.min.js" \
                -o build/web/browserfs.min.js
           sed -i 's|https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js|browserfs.min.js|g' \
                build/web/index.html
