@@ -60,47 +60,8 @@ jobs:
           tar -czf space_invader_pygame.tar.gz -C /tmp/repack .
           echo "Repacked archive size: $(du -sh space_invader_pygame.tar.gz | cut -f1)"
           cd ../..
-          # Inject a fetch progress tracker so users see download % instead of a
-          # static "Loading, please wait..." message.  Written to a separate JS file
-          # to avoid inline escaping issues in sed/YAML.
-          cat > build/web/progress.js << 'JSEOF'
-(function () {
-  var _f = window.fetch;
-  window.fetch = function (url, opts) {
-    if (typeof url === "string" && url.indexOf(".tar.gz") !== -1) {
-      return _f(url, opts).then(function (resp) {
-        var total = parseInt(resp.headers.get("Content-Length") || "0", 10);
-        var loaded = 0;
-        var sEl = document.getElementById("status");
-        var pEl = document.getElementById("progress");
-        if (sEl) sEl.innerText = "Downloading... 0%";
-        if (pEl) { pEl.max = 100; pEl.value = 0; }
-        var reader = resp.body.getReader();
-        var chunks = [];
-        function pump() {
-          return reader.read().then(function (r) {
-            if (r.done) {
-              if (sEl) sEl.innerText = "Extracting...";
-              if (pEl) pEl.value = 100;
-              return new Response(new Blob(chunks), { status: resp.status, headers: resp.headers });
-            }
-            chunks.push(r.value);
-            loaded += r.value.length;
-            if (total) {
-              var pct = Math.min(99, Math.round(loaded / total * 100));
-              if (sEl) sEl.innerText = "Downloading... " + pct + "%";
-              if (pEl) pEl.value = pct;
-            }
-            return pump();
-          });
-        }
-        return pump();
-      });
-    }
-    return _f(url, opts);
-  };
-})();
-JSEOF
+          # Inject a fetch progress tracker (progress.js is committed to the repo).
+          cp progress.js build/web/progress.js
           sed -i 's|</head>|<script src="progress.js"></script></head>|' build/web/index.html
           echo "Progress bar script injected."
           # Download BrowserFS from unpkg (pygame-web CDN returns 404 for this file).
