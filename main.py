@@ -1,105 +1,103 @@
 # main.py
+import asyncio
 import math
 import random
-import pygame
-from pygame import mixer
-from login import login_screen
 import time
 
-def run_game(username):
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+import pygame
+from pygame import mixer
+
+from login import login_screen
+
+# Constants
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+PLAYER_START_X = 370
+PLAYER_START_Y = 480
+PLAYER_SPEED = 5
+BULLET_START_Y = 480
+BULLET_SPEED = 10
+ENEMY_COUNT = 6
+ENEMY_SPEED = 4
+ENEMY_DROP = 40
+POWERUP_SPEED = 3
+POWERUP_DURATION = 5
+SPECIAL_BULLET_RANGE = 50
+COLLISION_RADIUS = 27
+PLAYER_BOUNDARY = 736
+
+
+async def run_game(screen, username):
     pygame.display.set_caption("Space Invader")
-    icon = pygame.image.load('ufo.png')
+    icon = pygame.image.load("ufo.png")
     pygame.display.set_icon(icon)
 
-    # Background
-    background = pygame.image.load('background.png')
-    mixer.music.load("background.wav")
+    background = pygame.image.load("background.png")
+    mixer.music.load("background.ogg")
     mixer.music.play(-1)
 
-    # Fonts
-    font = pygame.font.Font('freesansbold.ttf', 32)
-    over_font = pygame.font.Font('freesansbold.ttf', 64)
+    laser_sound = mixer.Sound("laser.ogg")
+    explosion_sound = mixer.Sound("explosion.ogg")
 
-    # Player
-    playerImg = pygame.image.load('player.png')
-    playerX, playerY = 370, 480
-    playerX_change = 0
+    font = pygame.font.Font("freesansbold.ttf", 32)
+    over_font = pygame.font.Font("freesansbold.ttf", 64)
 
-    # Bullet
-    bulletImg = pygame.image.load('bullet.png')
-    bulletX, bulletY = 0, 480
-    bulletY_change = 10
-    bullet_state = "ready"
+    playerImg = pygame.image.load("player.png")
+    bulletImg = pygame.image.load("bullet.png")
+    enemyImg = [pygame.image.load("enemy.png") for _ in range(ENEMY_COUNT)]
 
-    # Enemies
-    num_of_enemies = 6
-    enemyImg = [pygame.image.load('enemy.png') for _ in range(num_of_enemies)]
-    enemyX = [random.randint(0, 736) for _ in range(num_of_enemies)]
-    enemyY = [random.randint(50, 150) for _ in range(num_of_enemies)]
-    enemyX_change = [4 for _ in range(num_of_enemies)]
-    enemyY_change = [40 for _ in range(num_of_enemies)]
+    def make_enemy_positions():
+        return (
+            [random.randint(0, PLAYER_BOUNDARY) for _ in range(ENEMY_COUNT)],
+            [random.randint(50, 150) for _ in range(ENEMY_COUNT)],
+            [ENEMY_SPEED for _ in range(ENEMY_COUNT)],
+            [ENEMY_DROP for _ in range(ENEMY_COUNT)],
+        )
 
-    # Game variables
-    score_value = 0
-    lives = 3
+    def make_powerup_position():
+        return random.randint(50, 750), random.randint(50, 300)
 
-    # Power-up
-    powerup_active = True
-    powerupX = random.randint(50, 750)
-    powerupY = random.randint(50, 300)
-    powerup_speed = 3
-    special_bullet_active = False
-    special_bullet_end_time = 0
+    def initial_state():
+        ex, ey, exc, eyc = make_enemy_positions()
+        px, py = make_powerup_position()
+        return {
+            "playerX": PLAYER_START_X,
+            "playerX_change": 0,
+            "bulletX": 0,
+            "bulletY": BULLET_START_Y,
+            "bullet_state": "ready",
+            "score": 0,
+            "lives": 3,
+            "enemyX": ex,
+            "enemyY": ey,
+            "enemyX_change": exc,
+            "enemyY_change": eyc,
+            "powerupX": px,
+            "powerupY": py,
+            "special_bullet_active": False,
+            "special_bullet_end_time": 0,
+            "game_over": False,
+            "paused": False,
+        }
 
-    # Helper functions
+    state = initial_state()
+    clock = pygame.time.Clock()
+
+    def isCollision(ex, ey, bx, by):
+        return math.sqrt((ex - bx) ** 2 + (ey - by) ** 2) < COLLISION_RADIUS
+
     def show_ui():
-        top_color = (50, 50, 50)
-        if special_bullet_active:
-            top_color = (255, 100, 0)  # Flash effect for special bullet
-        pygame.draw.rect(screen, top_color, (0, 0, 800, 50))
-        screen.blit(font.render(f"Score: {score_value}", True, (255, 255, 255)), (10, 10))
+        top_color = (255, 100, 0) if state["special_bullet_active"] else (50, 50, 50)
+        pygame.draw.rect(screen, top_color, (0, 0, SCREEN_WIDTH, 50))
+        screen.blit(font.render(f"Score: {state['score']}", True, (255, 255, 255)), (10, 10))
         screen.blit(font.render(f"Player: {username}", True, (255, 255, 0)), (550, 10))
-        screen.blit(font.render(f"Lives: {lives}", True, (255, 0, 0)), (350, 10))
+        screen.blit(font.render(f"Lives: {state['lives']}", True, (255, 0, 0)), (350, 10))
 
     def game_over_text():
         screen.blit(over_font.render("GAME OVER", True, (255, 255, 255)), (200, 250))
         screen.blit(font.render("Press R to Restart", True, (200, 200, 0)), (270, 350))
 
-    def player(x, y):
-        screen.blit(playerImg, (x, y))
-
-    def enemy(x, y, i):
-        screen.blit(enemyImg[i], (x, y))
-
-    def fire_bullet(x, y):
-        nonlocal bullet_state
-        bullet_state = "fire"
-        screen.blit(bulletImg, (x + 16, y + 10))
-
-    def isCollision(ex, ey, bx, by):
-        return math.sqrt((ex - bx) ** 2 + (ey - by) ** 2) < 27
-
-    def reset_game():
-        nonlocal playerX, playerX_change, bulletX, bulletY, bullet_state
-        nonlocal score_value, lives
-        nonlocal enemyX, enemyY, enemyX_change, enemyY_change
-        nonlocal special_bullet_active, special_bullet_end_time
-        playerX, playerX_change = 370, 0
-        bulletX, bulletY, bullet_state = 0, 480, "ready"
-        score_value, lives = 0, 3
-        enemyX = [random.randint(0, 736) for _ in range(num_of_enemies)]
-        enemyY = [random.randint(50, 150) for _ in range(num_of_enemies)]
-        enemyX_change = [4 for _ in range(num_of_enemies)]
-        enemyY_change = [40 for _ in range(num_of_enemies)]
-        special_bullet_active = False
-        special_bullet_end_time = 0
-
     running = True
-    paused = False
-    game_over = False
-
     while running:
         screen.fill((0, 0, 0))
         screen.blit(background, (0, 0))
@@ -110,101 +108,108 @@ def run_game(username):
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p:
-                    paused = not paused
-                if event.key == pygame.K_r and game_over:
-                    reset_game()
-                    game_over = False
-                if not paused and not game_over:
+                    state["paused"] = not state["paused"]
+                if event.key == pygame.K_r and state["game_over"]:
+                    state = initial_state()
+                if not state["paused"] and not state["game_over"]:
                     if event.key == pygame.K_LEFT:
-                        playerX_change = -5
+                        state["playerX_change"] = -PLAYER_SPEED
                     if event.key == pygame.K_RIGHT:
-                        playerX_change = 5
-                    if event.key == pygame.K_SPACE and bullet_state == "ready":
-                        bulletX = playerX
-                        fire_bullet(bulletX, bulletY)
-                        mixer.Sound("laser.wav").play()
-            if event.type == pygame.KEYUP:
-                if event.key in [pygame.K_LEFT, pygame.K_RIGHT]:
-                    playerX_change = 0
+                        state["playerX_change"] = PLAYER_SPEED
+                    if event.key == pygame.K_SPACE and state["bullet_state"] == "ready":
+                        state["bulletX"] = state["playerX"]
+                        state["bullet_state"] = "fire"
+                        laser_sound.play()
 
-        if not paused and not game_over:
+            if event.type == pygame.KEYUP:
+                if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                    state["playerX_change"] = 0
+
+        if not state["paused"] and not state["game_over"]:
             # Player movement
-            playerX += playerX_change
-            playerX = max(0, min(playerX, 736))
+            state["playerX"] = max(
+                0, min(state["playerX"] + state["playerX_change"], PLAYER_BOUNDARY)
+            )
 
             # Enemies
-            for i in range(num_of_enemies):
-                enemyX[i] += enemyX_change[i]
-                if enemyX[i] <= 0:
-                    enemyX_change[i] = 4
-                    enemyY[i] += enemyY_change[i]
-                elif enemyX[i] >= 736:
-                    enemyX_change[i] = -4
-                    enemyY[i] += enemyY_change[i]
+            for i in range(ENEMY_COUNT):
+                state["enemyX"][i] += state["enemyX_change"][i]
+                if state["enemyX"][i] <= 0:
+                    state["enemyX_change"][i] = ENEMY_SPEED
+                    state["enemyY"][i] += state["enemyY_change"][i]
+                elif state["enemyX"][i] >= PLAYER_BOUNDARY:
+                    state["enemyX_change"][i] = -ENEMY_SPEED
+                    state["enemyY"][i] += state["enemyY_change"][i]
 
                 # Bullet collision
-                if bullet_state == "fire":
-                    if special_bullet_active:
-                        if abs(enemyX[i] - bulletX) < 50:  # hits column
-                            mixer.Sound("explosion.wav").play()
-                            score_value += 1
-                            enemyX[i] = random.randint(0, 736)
-                            enemyY[i] = random.randint(50, 150)
-                            bulletY = 480
-                            bullet_state = "ready"
+                if state["bullet_state"] == "fire":
+                    hit = False
+                    if state["special_bullet_active"]:
+                        hit = abs(state["enemyX"][i] - state["bulletX"]) < SPECIAL_BULLET_RANGE
                     else:
-                        if isCollision(enemyX[i], enemyY[i], bulletX, bulletY):
-                            mixer.Sound("explosion.wav").play()
-                            score_value += 1
-                            enemyX[i] = random.randint(0, 736)
-                            enemyY[i] = random.randint(50, 150)
-                            bulletY = 480
-                            bullet_state = "ready"
+                        hit = isCollision(
+                            state["enemyX"][i], state["enemyY"][i],
+                            state["bulletX"], state["bulletY"],
+                        )
+                    if hit:
+                        explosion_sound.play()
+                        state["score"] += 1
+                        state["enemyX"][i] = random.randint(0, PLAYER_BOUNDARY)
+                        state["enemyY"][i] = random.randint(50, 150)
+                        state["bulletY"] = BULLET_START_Y
+                        state["bullet_state"] = "ready"
 
                 # Enemy reaches bottom
-                if enemyY[i] > 440:
-                    lives -= 1
-                    enemyX[i] = random.randint(0, 736)
-                    enemyY[i] = random.randint(50, 150)
-                    if lives <= 0:
-                        game_over = True
+                if state["enemyY"][i] > 440:
+                    state["lives"] -= 1
+                    state["enemyX"][i] = random.randint(0, PLAYER_BOUNDARY)
+                    state["enemyY"][i] = random.randint(50, 150)
+                    if state["lives"] <= 0:
+                        state["game_over"] = True
 
-                enemy(enemyX[i], enemyY[i], i)
+                screen.blit(enemyImg[i], (state["enemyX"][i], state["enemyY"][i]))
 
             # Bullet movement
-            if bulletY <= 0:
-                bulletY = 480
-                bullet_state = "ready"
-            if bullet_state == "fire":
-                fire_bullet(bulletX, bulletY)
-                bulletY -= bulletY_change
+            if state["bulletY"] <= 0:
+                state["bulletY"] = BULLET_START_Y
+                state["bullet_state"] = "ready"
+            if state["bullet_state"] == "fire":
+                screen.blit(bulletImg, (state["bulletX"] + 16, state["bulletY"] + 10))
+                state["bulletY"] -= BULLET_SPEED
 
-            # Power-up by nikita
-            if powerup_active:
-                powerupY += powerup_speed
-                pygame.draw.rect(screen, (0, 255, 255), (powerupX, powerupY, 30, 30))
-                if powerupY > 600:
-                    powerupY = random.randint(50, 300)
-                    powerupX = random.randint(50, 750)
-                if math.sqrt((powerupX - playerX) ** 2 + (powerupY - playerY) ** 2) < 40:
-                    special_bullet_active = True
-                    special_bullet_end_time = time.time() + 5
-                    powerupY = random.randint(50, 300)
-                    powerupX = random.randint(50, 750)
+            # Power-up
+            state["powerupY"] += POWERUP_SPEED
+            pygame.draw.rect(screen, (0, 255, 255), (state["powerupX"], state["powerupY"], 30, 30))
+            if state["powerupY"] > SCREEN_HEIGHT:
+                state["powerupX"], state["powerupY"] = make_powerup_position()
+            player_dist = math.sqrt(
+                (state["powerupX"] - state["playerX"]) ** 2
+                + (state["powerupY"] - PLAYER_START_Y) ** 2
+            )
+            if player_dist < 40:
+                state["special_bullet_active"] = True
+                state["special_bullet_end_time"] = time.time() + POWERUP_DURATION
+                state["powerupX"], state["powerupY"] = make_powerup_position()
 
-            # Deactivate special bullet after 5 seconds
-            if special_bullet_active and time.time() > special_bullet_end_time:
-                special_bullet_active = False
+            # Expire special bullet
+            if state["special_bullet_active"] and time.time() > state["special_bullet_end_time"]:
+                state["special_bullet_active"] = False
 
-        player(playerX, playerY)
+        screen.blit(playerImg, (state["playerX"], PLAYER_START_Y))
         show_ui()
-        if game_over:
+        if state["game_over"]:
             game_over_text()
 
         pygame.display.update()
+        clock.tick(60)
+        await asyncio.sleep(0)
 
-# add username
 
-if __name__ == "__main__":
-    username = login_screen()
-    run_game(username)
+async def main():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    username = await login_screen(screen)
+    await run_game(screen, username)
+
+
+asyncio.run(main())

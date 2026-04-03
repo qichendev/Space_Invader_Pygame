@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+
+# uv / virtualenv
+.venv/
+.python-version
+
+# Pygbag build artifacts
+build/
+
+# Original WAV files (replaced by OGG for web)
+*.wav
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp

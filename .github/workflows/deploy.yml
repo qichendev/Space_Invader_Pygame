@@ -1,0 +1,62 @@
+name: Build and Deploy to Azure Static Web Apps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+jobs:
+  build_and_deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Build with Pygbag
+        run: |
+          uv run pygbag --disable-sound-format-error . &
+          PYGBAG_PID=$!
+          echo "Waiting for build/web/index.html..."
+          for i in $(seq 1 30); do
+            if [ -f "build/web/index.html" ]; then
+              echo "Build complete after $((i * 3))s"
+              break
+            fi
+            sleep 3
+          done
+          kill $PYGBAG_PID 2>/dev/null || true
+          if [ ! -f "build/web/index.html" ]; then
+            echo "ERROR: build/web/index.html was not generated"
+            exit 1
+          fi
+          echo "Build artifacts:"
+          ls -lh build/web/
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: build/web
+          skip_app_build: true
+
+  close_pull_request:
+    name: Close Pull Request Environment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    steps:
+      - name: Close Pull Request
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
