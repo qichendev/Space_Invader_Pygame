@@ -42,8 +42,9 @@ jobs:
           fi
           # Auto-start the game without requiring a click on the run button
           sed -i 's/autorun : 0/autorun : 1/g' build/web/index.html
-          # Do not block Python execution waiting for audio user gesture
-          sed -i 's/ume_block : 1/ume_block : 0/g' build/web/index.html
+          # Bypass the MM.UME media-engagement wait loop in site.py
+          # (audio is already deferred to first keypress in main.py)
+          sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
           # Copy Azure config for WASM headers and MIME types
           cp staticwebapp.config.json build/web/staticwebapp.config.json
           echo "Build artifacts:"
