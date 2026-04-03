@@ -46,6 +46,8 @@ jobs:
           # (audio requires a user gesture to load; without this, embed.counter()
           #  stays negative forever and Python never starts)
           sed -i 's/data-os="vtx,snd,gui"/data-os="vtx,gui"/' build/web/index.html
+          # Bypass the embed.counter() WASM module wait loop (blocks on audio without user gesture)
+          sed -i 's/while embed.counter()<0:/if False:  # patched: skip WASM module wait/' build/web/index.html
           # Bypass the MM.UME media-engagement wait loop in site.py
           sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
           # Copy Azure config for WASM headers and MIME types
