@@ -50,6 +50,16 @@ jobs:
           sed -i 's/while embed.counter()<0:/if False:  # patched: skip WASM module wait/' build/web/index.html
           # Bypass the MM.UME media-engagement wait loop in site.py
           sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
+          # Repack the game archive excluding .venv (pygbag bundles the entire project
+          # directory including the local .venv, inflating the archive from ~1MB to 19MB
+          # and causing the browser to hang while WASM-Python extracts hundreds of files).
+          cd build/web
+          mkdir -p /tmp/repack
+          tar -xzf space_invader_pygame.tar.gz -C /tmp/repack
+          rm -rf /tmp/repack/assets/.venv
+          tar -czf space_invader_pygame.tar.gz -C /tmp/repack .
+          echo "Repacked archive size: $(du -sh space_invader_pygame.tar.gz | cut -f1)"
+          cd ../..
           # Download BrowserFS from unpkg (pygame-web CDN returns 404 for this file).
           # Self-hosting also avoids ORB blocking on cross-origin opaque responses.
           curl -sL "https://unpkg.com/browserfs@2.0.0/dist/browserfs.min.js" \
