@@ -1,8 +1,8 @@
 # Space Invaders
 
-**Play now:** https://lively-smoke-01b8a7b1e.6.azurestaticapps.net
+**Download:** https://lively-smoke-01b8a7b1e.6.azurestaticapps.net
 
-A classic Space Invaders game built with Python and Pygame, deployable as a web app via Pygbag.
+A classic Space Invaders game built with Python and Pygame.
 
 **Course:** CSD-4503 - DevOps Tools and Practices
 
@@ -35,41 +35,33 @@ A classic Space Invaders game built with Python and Pygame, deployable as a web 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-## Run locally (desktop)
+## Run locally
 
 ```bash
 uv sync
 uv run python main.py
 ```
 
-## Run locally (web preview)
+## Build executable
 
 ```bash
 uv sync --all-groups
-uv run dev
+uv run pyinstaller space_invader.spec
 ```
 
-Then open `http://localhost:8000` in your browser.
+Output is written to `dist/`. The executable bundles all game assets and runs without Python installed.
 
-## Build static web files
-
-```bash
-uv run build
-```
-
-Output is written to `build/web/`. Deploy that directory to any static host.
-
-## Deploy to Azure Static Web Apps
+## Deploy
 
 Deployment is automated via GitHub Actions on every push to `main`.
+
+The workflow:
+1. Builds executables for Windows, macOS, and Linux in parallel
+2. Publishes them to **GitHub Releases** (tag: `latest`)
+3. Deploys the download landing page to **Azure Static Web Apps**
 
 **One-time setup:**
 
 1. Create an Azure Static Web App (Free tier, deployment source: *Other*)
 2. Copy the deployment token from **Azure Portal → your app → Manage deployment token**
 3. Add it to GitHub: **Settings → Secrets → Actions → `AZURE_STATIC_WEB_APPS_API_TOKEN`**
-
-The workflow (`.github/workflows/deploy.yml`) will then:
-- Build the web app with Pygbag on every push to `main`
-- Deploy to production automatically
-- Create a preview environment for each pull request
