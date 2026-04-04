@@ -61,11 +61,13 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Rename artifacts for release
+      - name: Package artifacts for release
         run: |
           cp artifacts/space_invader_windows.exe/space_invader.exe space_invader_windows.exe
-          cp artifacts/space_invader_macos/space_invader space_invader_macos
-          cp artifacts/space_invader_linux/space_invader space_invader_linux
+          chmod +x artifacts/space_invader_macos/space_invader
+          zip space_invader_macos.zip -j artifacts/space_invader_macos/space_invader
+          chmod +x artifacts/space_invader_linux/space_invader
+          zip space_invader_linux.zip -j artifacts/space_invader_linux/space_invader
 
       - name: Create or update latest release
         env:
@@ -80,8 +82,8 @@ jobs:
 
           gh release upload latest \
             space_invader_windows.exe \
-            space_invader_macos \
-            space_invader_linux \
+            space_invader_macos.zip \
+            space_invader_linux.zip \
             --clobber
 
   deploy:
