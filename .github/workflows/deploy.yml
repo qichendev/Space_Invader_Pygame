@@ -63,9 +63,9 @@ jobs:
 
       - name: Rename artifacts for release
         run: |
-          cp artifacts/space_invader_windows.exe/space_invader.exe artifacts/space_invader_windows.exe_bin
-          cp artifacts/space_invader_macos/space_invader artifacts/space_invader_macos_bin
-          cp artifacts/space_invader_linux/space_invader artifacts/space_invader_linux_bin
+          cp artifacts/space_invader_windows.exe/space_invader.exe space_invader_windows.exe
+          cp artifacts/space_invader_macos/space_invader space_invader_macos
+          cp artifacts/space_invader_linux/space_invader space_invader_linux
 
       - name: Create or update latest release
         env:
@@ -73,15 +73,15 @@ jobs:
         run: |
           gh release edit latest \
             --title "Latest Build" \
-            --notes "每次推送 main 分支自动构建。" 2>/dev/null || \
+            --notes "Auto-built from the latest commit on main." 2>/dev/null || \
           gh release create latest \
             --title "Latest Build" \
-            --notes "每次推送 main 分支自动构建。"
+            --notes "Auto-built from the latest commit on main."
 
           gh release upload latest \
-            "artifacts/space_invader_windows.exe_bin#space_invader_windows.exe" \
-            "artifacts/space_invader_macos_bin#space_invader_macos" \
-            "artifacts/space_invader_linux_bin#space_invader_linux" \
+            space_invader_windows.exe \
+            space_invader_macos \
+            space_invader_linux \
             --clobber
 
   deploy:
