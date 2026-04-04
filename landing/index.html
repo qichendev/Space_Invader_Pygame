@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Invader</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #05051a;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      letter-spacing: 0.15em;
+      color: #ffe600;
+      text-shadow: 0 0 24px #ffe60088;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #aaa;
+      font-size: 1rem;
+      margin-bottom: 48px;
+    }
+
+    .downloads {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+
+    .btn-win  { background: #0078d4; color: #fff; }
+    .btn-mac  { background: #555; color: #fff; }
+    .btn-linux { background: #e95420; color: #fff; }
+
+    .notice {
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 16px 24px;
+      max-width: 560px;
+      font-size: 0.875rem;
+      color: #bbb;
+      line-height: 1.6;
+      margin-bottom: 48px;
+    }
+    .notice strong { color: #fff; }
+
+    .controls {
+      background: #0d0d1f;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 24px 32px;
+      max-width: 420px;
+      width: 100%;
+    }
+    .controls h2 {
+      font-size: 1rem;
+      color: #aaa;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .key-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #1e1e3a;
+      font-size: 0.9rem;
+    }
+    .key-row:last-child { border-bottom: none; }
+    kbd {
+      background: #2a2a4a;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>SPACE INVADER</h1>
+  <p class="subtitle">经典太空侵略者 — CSD-4503 DevOps 课程项目</p>
+
+  <div class="downloads">
+    <a class="btn btn-win"
+       href="https://github.com/qichendev/Space_Invader_Pygame/releases/download/latest/space_invader_windows.exe">
+      下载 Windows (.exe)
+    </a>
+    <a class="btn btn-mac"
+       href="https://github.com/qichendev/Space_Invader_Pygame/releases/download/latest/space_invader_macos">
+      下载 macOS
+    </a>
+    <a class="btn btn-linux"
+       href="https://github.com/qichendev/Space_Invader_Pygame/releases/download/latest/space_invader_linux">
+      下载 Linux
+    </a>
+  </div>
+
+  <div class="notice">
+    <strong>macOS 用户：</strong>下载后在终端运行
+    <code>chmod +x space_invader_macos &amp;&amp; ./space_invader_macos</code>，
+    或右键点击 → 打开，跳过 Gatekeeper 警告。<br><br>
+    <strong>Windows 用户：</strong>如果 SmartScreen 弹出警告，点击「更多信息」→「仍要运行」。
+  </div>
+
+  <div class="controls">
+    <h2>操作方式</h2>
+    <div class="key-row"><span>移动</span><span><kbd>←</kbd> <kbd>→</kbd></span></div>
+    <div class="key-row"><span>射击</span><span><kbd>Space</kbd></span></div>
+    <div class="key-row"><span>暂停 / 继续</span><span><kbd>P</kbd></span></div>
+    <div class="key-row"><span>重新开始</span><span><kbd>R</kbd></span></div>
+  </div>
+
+</body>
+</html>

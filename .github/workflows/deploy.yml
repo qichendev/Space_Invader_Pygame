@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Static Web Apps
+name: Build and Deploy
 
 on:
   push:
@@ -8,10 +8,23 @@ on:
     branches: [main]
 
 jobs:
-  build_and_deploy:
-    name: Build and Deploy
-    runs-on: ubuntu-latest
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: space_invader_windows.exe
+            bin: dist/space_invader.exe
+          - os: macos-latest
+            artifact: space_invader_macos
+            bin: dist/space_invader
+          - os: ubuntu-latest
+            artifact: space_invader_linux
+            bin: dist/space_invader
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,60 +33,63 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --all-groups
-        env:
-          UV_PROJECT_ENVIRONMENT: /tmp/venv
 
-      - name: Build with Pygbag
+      - name: Build executable
+        run: uv run pyinstaller space_invader.spec
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.bin }}
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Rename artifacts for release
         run: |
-          /tmp/venv/bin/pygbag --disable-sound-format-error . &
-          PYGBAG_PID=$!
-          echo "Waiting for build/web/index.html..."
-          for i in $(seq 1 30); do
-            if [ -f "build/web/index.html" ]; then
-              echo "Build complete after $((i * 3))s"
-              break
-            fi
-            sleep 3
-          done
-          kill $PYGBAG_PID 2>/dev/null || true
-          if [ ! -f "build/web/index.html" ]; then
-            echo "ERROR: build/web/index.html was not generated"
-            exit 1
-          fi
-          # Auto-start the game without requiring a click on the run button
-          sed -i 's/autorun : 0/autorun : 1/g' build/web/index.html
-          # Remove "snd" from data-os so Pygbag does not wait for audio WASM
-          # (audio requires a user gesture to load; without this, embed.counter()
-          #  stays negative forever and Python never starts)
-          sed -i 's/data-os="vtx,snd,gui"/data-os="vtx,gui"/' build/web/index.html
-          # Bypass the embed.counter() WASM module wait loop (blocks on audio without user gesture)
-          sed -i 's/while embed.counter()<0:/if False:  # patched: skip WASM module wait/' build/web/index.html
-          # Bypass the MM.UME media-engagement wait loop in site.py
-          sed -i 's/if not platform.window.MM.UME:/platform.window.MM.UME = True  # patched\n    if not platform.window.MM.UME:/' build/web/index.html
-          # Repack the game archive excluding .venv (pygbag bundles the entire project
-          # directory including the local .venv, inflating the archive from ~1MB to 19MB
-          # and causing the browser to hang while WASM-Python extracts hundreds of files).
-          cd build/web
-          mkdir -p /tmp/repack
-          tar -xzf space_invader_pygame.tar.gz -C /tmp/repack
-          rm -rf /tmp/repack/assets/.venv
-          tar -czf space_invader_pygame.tar.gz -C /tmp/repack .
-          echo "Repacked archive size: $(du -sh space_invader_pygame.tar.gz | cut -f1)"
-          cd ../..
-          # Inject a fetch progress tracker (progress.js is committed to the repo).
-          cp progress.js build/web/progress.js
-          sed -i 's|</head>|<script src="progress.js"></script></head>|' build/web/index.html
-          echo "Progress bar script injected."
-          # Download BrowserFS from unpkg (pygame-web CDN returns 404 for this file).
-          # Self-hosting also avoids ORB blocking on cross-origin opaque responses.
-          curl -sL "https://unpkg.com/browserfs@2.0.0/dist/browserfs.min.js" \
-               -o build/web/browserfs.min.js
-          sed -i 's|https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js|browserfs.min.js|g' \
-               build/web/index.html
-          # Copy Azure config for WASM headers and MIME types
-          cp staticwebapp.config.json build/web/staticwebapp.config.json
-          echo "Build artifacts:"
-          ls -lh build/web/
+          cp artifacts/space_invader_windows.exe/space_invader.exe artifacts/space_invader_windows.exe_bin
+          cp artifacts/space_invader_macos/space_invader artifacts/space_invader_macos_bin
+          cp artifacts/space_invader_linux/space_invader artifacts/space_invader_linux_bin
+
+      - name: Create or update latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit latest \
+            --title "Latest Build" \
+            --notes "每次推送 main 分支自动构建。" 2>/dev/null || \
+          gh release create latest \
+            --title "Latest Build" \
+            --notes "每次推送 main 分支自动构建。"
+
+          gh release upload latest \
+            "artifacts/space_invader_windows.exe_bin#space_invader_windows.exe" \
+            "artifacts/space_invader_macos_bin#space_invader_macos" \
+            "artifacts/space_invader_linux_bin#space_invader_linux" \
+            --clobber
+
+  deploy:
+    name: Deploy Landing Page
+    needs: release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -81,7 +97,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: build/web
+          app_location: landing
           skip_app_build: true
 
   close_pull_request:
