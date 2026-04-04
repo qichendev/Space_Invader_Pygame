@@ -1,13 +1,20 @@
 # main.py
 import asyncio
 import math
+import os
 import random
+import sys
 import time
 
 import pygame
 from pygame import mixer
 
 from login import login_screen
+
+
+def resource_path(filename):
+    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, filename)
 
 # Constants
 SCREEN_WIDTH = 800
@@ -29,27 +36,27 @@ PLAYER_BOUNDARY = 736
 
 async def run_game(screen, username):
     pygame.display.set_caption("Space Invader")
-    icon = pygame.image.load("ufo.png")
+    icon = pygame.image.load(resource_path("ufo.png"))
     pygame.display.set_icon(icon)
 
-    background = pygame.image.load("background.png")
+    background = pygame.image.load(resource_path("background.png"))
 
     # Load audio — deferred play until first user interaction (browser autoplay policy)
     try:
-        mixer.music.load("background.ogg")
-        laser_sound = mixer.Sound("laser.ogg")
-        explosion_sound = mixer.Sound("explosion.ogg")
+        mixer.music.load(resource_path("background.ogg"))
+        laser_sound = mixer.Sound(resource_path("laser.ogg"))
+        explosion_sound = mixer.Sound(resource_path("explosion.ogg"))
     except Exception:
         laser_sound = None
         explosion_sound = None
     music_started = False
 
-    font = pygame.font.Font("freesansbold.ttf", 32)
-    over_font = pygame.font.Font("freesansbold.ttf", 64)
+    font = pygame.font.Font(resource_path("freesansbold.ttf"), 32)
+    over_font = pygame.font.Font(resource_path("freesansbold.ttf"), 64)
 
-    playerImg = pygame.image.load("player.png")
-    bulletImg = pygame.image.load("bullet.png")
-    enemyImg = [pygame.image.load("enemy.png") for _ in range(ENEMY_COUNT)]
+    playerImg = pygame.image.load(resource_path("player.png"))
+    bulletImg = pygame.image.load(resource_path("bullet.png"))
+    enemyImg = [pygame.image.load(resource_path("enemy.png")) for _ in range(ENEMY_COUNT)]
 
     def make_enemy_positions():
         return (
