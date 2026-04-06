@@ -116,7 +116,8 @@ async def run_game(screen, username):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                sys.exit()
 
             if event.type == pygame.KEYDOWN:
                 # Start background music on first keypress (browser autoplay policy)
