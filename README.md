@@ -12,7 +12,7 @@ A classic Space Invaders game built with Python and Pygame.
 |------|------------|
 | Ami Valand | C0956779 |
 | Nikita Nikita | C0958762 |
-| Deadeepya Kognati | C0959068 |
+| Deadeepya Koganti | C0959068 |
 | Qi Chen | C0944666 |
 | Anmol Kaur | C0949650 |
 | Payal Patel | C0959412 |
